@@ -11,6 +11,8 @@ from wagtail.core.models import Page, Site
 
 logger = logging.getLogger(__name__)
 
+BAKERY_RESULTS_PER_PAGE = getattr(settings, 'BAKERY_RESULTS_PER_PAGE', 20)
+
 
 class APIResponseError(Exception):
     pass
@@ -24,7 +26,7 @@ def handle_api_error(response):
 
 
 class APIListingView(BuildableMixin):
-    results_per_page = 20
+    results_per_page = BAKERY_RESULTS_PER_PAGE
 
     @property
     def build_method(self):
@@ -85,7 +87,7 @@ class APIDetailView(BuildableMixin):
         self.build_file(path, page_content)
 
     def build_queryset(self):
-        [self.build_object(o) for o in self.get_queryset().all()]
+        [self.build_object(o) for o in self.get_queryset()]
 
     def unbuild_object(self, obj):
         """
@@ -123,7 +125,7 @@ class PagesAPIDetailView(APIDetailView):
 
     def get_queryset(self):
         if getattr(settings, 'BAKERY_MULTISITE', False):
-            return Page.objects.all().public().live()
+            return Page.objects.filter(depth__gt=1).public().live()
         else:
             site = Site.objects.get(is_default_site=True)
             return site.root_page.get_descendants(inclusive=True).public().live()
